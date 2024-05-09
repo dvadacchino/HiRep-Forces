@@ -192,4 +192,15 @@ void force_hmc(double dt, void *vpar)
 #endif
 
 	fermion_force_end(dt, force);
+  	lprintf("MONOMIAL_FORCE",0,"We are in the hmc monomial, store_force = %f,\t", par->store_force);
+	if( (int) par->store_force){
+		//lprintf("MONOMIAL_FORCE",0,"We are in the hmc monomial, store_force = %f,", 
+		//	par->store_force);
+		*(par->fhist + par->idx_hist) =0.;
+		force_normsq(dt, par->fhist+par->idx_hist);
+		par->idx_hist++;
+		//lprintf("MONOMIAL_FORCE",0,"with idx_hist = %d\n", 
+		//	par->idx_hist);
+  		lprintf("FORCE_STAT",0,"storing and advancing pointer, idx_hist:%d, value stored (hmc): %f\n", par->idx_hist,par->fhist[par->idx_hist-1]);
+	}
 }

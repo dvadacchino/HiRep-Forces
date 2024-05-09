@@ -1067,6 +1067,24 @@ void fermion_force_begin()
 #endif
 }
 
+void force_normsq( double dt, double * f_nsq)
+{
+	double tmp=0.;
+	_MASTER_FOR(&glattice, ix)
+	{
+		for (int mu = 0; mu < 4; mu++)
+		{
+			//Here we need to take the modulus squared
+			_algebra_vector_sqnorm_g(tmp, *_4FIELD_AT(force_sum,ix,mu));
+			*f_nsq+=tmp;
+		}
+	}
+	*f_nsq = *f_nsq/dt;
+
+	global_sum(f_nsq,1);
+
+}
+
 void fermion_force_end(double dt, suNg_av_field *force)
 {
 #if defined(WITH_CLOVER) || defined(WITH_EXPCLOVER)

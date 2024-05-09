@@ -83,6 +83,12 @@ static void add_monomial_to_integrator(const monomial *m, int level)
    integrator_par *iter = ip;
    while(iter->level != level) iter = iter->next;
    iter->mon_list[iter->nmon] = m;
+   //for( int i=0; i< iter->nmon; i++){
+   //mon_pg_par * mpp = m->force_par;
+   //lprintf("ACTION", 0, "Hello! I am monomial %d, and my store_force is %f\n", 
+   //     		      m->data.id, 
+   //     		      mpp->force_par.store_force);
+   //}
    iter->nmon++;
 }
 
@@ -93,6 +99,12 @@ static void setup_monomials()
    section *cur;
    char *type;
    int level;
+   
+   //One int pointer for history length,
+   //one tmp variable to keep track of
+   //interlocked history lengths.
+   //int * length_hist[(const) n_mon];
+   //int tmp_lhist;
 
    for(int i = 0; i < n_mon; i++)
    {
@@ -106,6 +118,7 @@ static void setup_monomials()
       level = find_double(cur, "level");
       check(last_error, "Unable to find 'level' in monomial");
       check(level<0||level>=n_int, "Invalid integrator level %d in monomial\n", level);
+	 
 
       if(strcmp(type, "gauge") == 0)
       {
@@ -116,9 +129,16 @@ static void setup_monomials()
          // Find parameters
          par->beta = find_double(cur, "beta");
          check(last_error, "Unable to find 'beta' in monomial of type 'gauge'\n");
+      	 
+	 par->store_force = find_double(cur, "store_force");
+      	 check(last_error, "Unable to find 'store_force' in monomial i = %d\n", i);
+	 
+
+      	 //par->hist_length = f(id_mon);
 
          // Add monomial
          mret = add_mon(&data);
+      	 lprintf("ACTION", 10, "Monomial %d: level = %d, storing force = %f\n", i, level, par->store_force);
 
          // Monomial information
          lprintf("ACTION", 10, "Monomial %d: level = %d, type = gauge, beta = %1.6f\n", i, level, par->beta);
@@ -151,6 +171,11 @@ static void setup_monomials()
          // Find parameters
          par->mass = find_double(cur, "mass");
          check(last_error, "Unable to find 'mass' in monomial of type 'hmc'\n");
+      	 
+	 par->store_force = find_double(cur, "store_force");
+      	 check(last_error, "Unable to find 'store_force' in monomial i = %d\n", i);
+      	 //lprintf("ACTION", 10, "Monomial %d: level = %d, storing force = %f.\n", i, 
+	//		 level, par->fpar.store_force);
 
          data.MT_prec = find_double(cur, "mt_prec");
          check(last_error, "Unable to find 'mt_prec' in monomial of type 'hmc'\n");
@@ -163,7 +188,7 @@ static void setup_monomials()
 
          // Add monomial
          mret = add_mon(&data);
-
+	 lprintf("ACTION", 10, "Monomial %d: level = %d, storing force = %f\n", i, level, par->store_force);
          // Monomial information
          lprintf("ACTION", 10, "Monomial %d: level = %d, type = hmc, mass = %1.6f, force_prec = %1.2e, mt_prec = %1.2e\n",
                  i, level, par->mass, data.force_prec, data.MT_prec);
@@ -472,6 +497,8 @@ static void setup_integrator()
    char *type;
    int map[MAX_SECTIONS];
    int id;
+   tmp.history_length=1;
+   
 
    // Determine the ordering of the integrator levels and check for inconsistencies
    for(int i = 0; i < n_int; i++)
@@ -497,13 +524,18 @@ static void setup_integrator()
 
       type = find_string(cur, "type");
       check(last_error, "Unable to find 'type' in integrator\n");
-
+	
       tmp.nsteps = find_double(cur, "steps");
       check(last_error, "Unable to find 'steps' in integrator\n");
 
+      //[davidevincent] here the number of steps at level i+1 is always relative
+      //to the number of steps at level i, hence we take a product
+
       if(strcmp(type, "o2mn") == 0)
       {
+	 //This is too much, n=3, m=4 should produce 54
          tmp.integrator = &O2MN_multistep;
+	 tmp.history_length *= 2*(int)tmp.nsteps+1;
          lprintf("INTEGRATOR", 10, "Level %d: type = o2mn, steps = %d\n", i, tmp.nsteps);
       }
       else if(strcmp(type, "o4mn") == 0)
@@ -535,6 +567,9 @@ static void setup_integrator()
 
       // Fill structure
       iter->nsteps = tmp.nsteps;
+      iter->history_length = tmp.history_length;
+      lprintf("INTEGRATOR", 0, "steps at Level %d, steps = %d, history length= %d\n", 
+		      i, iter->nsteps, iter->history_length);
       iter->integrator = tmp.integrator;
       iter->mon_list = calloc(n_mon, sizeof(iter->mon_list));
       iter->nmon = 0;
@@ -637,11 +672,29 @@ void read_action(char *filename, integrator_par **ip_ptr)
    setup_integrator();
    setup_monomials();
 
+   monomial * tmp_mon;
+   monomial_data * tmp_mon_data;
    // Check that all integrator levels have monomials
    integrator_par *iter = ip;
    while(iter)
    {
       check(iter->nmon == 0, "No monomials on integrator level %d\n", iter->level);
+
+      for(int im = 0 ; im < iter->nmon ; im++){
+        tmp_mon = (monomial *)iter->mon_list[im];
+        tmp_mon_data = &(tmp_mon->data);
+        mon_pg_par * tmp_pg_par = tmp_mon_data->par;
+      	lprintf("ACTION", 0, "id within level %d: level = %d, history_length=%d, monomial id=%d, store_force =%f\n", 
+			im, 
+			iter->level, 
+			iter->history_length,
+			tmp_mon->data.id,
+			tmp_pg_par->store_force);
+              //par0 = iter->mon_list[im].data;
+              //if( (int) par0->force_par.store_force ){
+      	//		lprintf("ACTION", 0, "Monomial %d: level = %d, storing force = %f, history_length=%d\n", im, iter->level, par0->force_par.store_force, iter->history_length);
+      	//	}
+      }
       iter = iter->next;
    }
 

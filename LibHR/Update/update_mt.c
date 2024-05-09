@@ -88,6 +88,58 @@ void init_ghmc(ghmc_par *par)
 
   /* copy update parameters */
   update_par = *par;
+   
+  //initialized for the while cycle below, to compoute force history
+  monomial * tmp_mon;
+  monomial_data * tmp_mon_data;
+	
+  integrator_par * iter = par->integrator;
+  while(iter)
+  {
+     //check(iter->nmon == 0, "No monomials on integrator level %d\n", iter->level);
+
+     for(int im = 0 ; im < iter->nmon ; im++){
+       tmp_mon = (monomial *)iter->mon_list[im];
+       if( tmp_mon->data.type == PureGauge){
+       tmp_mon_data = &(tmp_mon->data);
+       mon_pg_par * tmp_pg_par = tmp_mon_data->par;
+     	lprintf("INIT_GHMC", 0, "id within level %d: level = %d, history_length=%d, monomial id=%d, store_force =%f\n", 
+       		im, 
+       		iter->level, 
+       		iter->history_length,
+       		tmp_mon->data.id,
+       		tmp_pg_par->store_force);
+             //par0 = iter->mon_list[im].data;
+             //if( (int) par0->force_par.store_force ){
+     	//		lprintf("ACTION", 0, "Monomial %d: level = %d, storing force = %f, history_length=%d\n", im, iter->level, par0->force_par.store_force, iter->history_length);
+     	//	}
+  	if(tmp_pg_par->store_force==1){
+  	      tmp_pg_par->force_par.fhist = (double *) malloc( sizeof(double)* iter->history_length);
+     	      lprintf("INIT_GHMC", 0, "Allocated fhist array for force_history of monomial id=%d\n", tmp_mon->data.id);  
+  	}
+       }
+       else if(tmp_mon->data.type == HMC){
+       	tmp_mon_data = &(tmp_mon->data);
+       	mon_hmc_par * tmp_hmc_par = tmp_mon_data->par;
+     	lprintf("INIT_GHMC", 0, "id within level %d: level = %d, history_length=%d, monomial id=%d, store_force =%f\n", 
+       		im, 
+       		iter->level, 
+       		iter->history_length,
+       		tmp_mon->data.id,
+       		tmp_hmc_par->store_force);
+             //par0 = iter->mon_list[im].data;
+             //if( (int) par0->force_par.store_force ){
+     	//		lprintf("ACTION", 0, "Monomial %d: level = %d, storing force = %f, history_length=%d\n", im, iter->level, par0->force_par.store_force, iter->history_length);
+     	//	}
+  	if(tmp_hmc_par->store_force==1){
+  	      tmp_hmc_par->fpar.fhist = (double *) malloc( sizeof(double)* iter->history_length);
+     	      lprintf("INIT_GHMC", 0, "Allocated fhist array for force_history of monomial id=%d\n", tmp_mon->data.id);  
+  	}
+
+       }
+     }
+     iter = iter->next;
+  }
 
   //#ifdef ROTATED_SF
   //  hmc_action_par.SF_ct = _update_par.SF_ct;
@@ -169,6 +221,20 @@ int update_ghmc()
   {
     const monomial *m = mon_n(i);
     m->gaussian_pf(m);
+  }
+  
+  /* Set the history index to 0 for each monomial */
+  for (int i = 0; i < num_mon(); ++i)
+  {
+    const monomial *m = mon_n(i);
+    if( m->data.type == PureGauge){
+	    force_gauge_par *  tmp_fgp = m->force_par;
+    		tmp_fgp->idx_hist=0;
+	}
+    else if(m->data.type == HMC){ 
+	    force_hmc_par *  tmp_fhmc = m->force_par;
+    		tmp_fhmc->idx_hist=0;
+    }
   }
 
   /* compute starting action */

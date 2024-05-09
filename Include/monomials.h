@@ -30,6 +30,7 @@ typedef enum {
 
 typedef struct {
 	double beta;
+	double store_force;
 	force_gauge_par force_par;
 	field_gauge_par field_par;
 } mon_pg_par;
@@ -51,6 +52,7 @@ typedef struct {
 
 typedef struct {
 	double mass;
+	double store_force;
 	int mre_past;
 	force_hmc_par fpar;
 	spinor_field *pf;
@@ -116,6 +118,8 @@ typedef struct _monomial {
 	void (*correct_la_pf)(const struct _monomial*);
 	const spinor_field *(*pseudofermion)(const struct _monomial*);
 	void (*add_local_action)(const struct _monomial*, scalar_field*);
+	//[COMPUTE ACTION]
+	void (*local_action)(const struct _monomial*, double * loc_action);
 } monomial;
 
 struct _monomial* pg_create(const monomial_data*);

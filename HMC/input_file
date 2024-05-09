@@ -1,5 +1,5 @@
 // Global variables 
-GLB_T = 6
+GLB_T = 4
 GLB_X = 4
 GLB_Y = 4
 GLB_Z = 4
@@ -11,7 +11,7 @@ NP_Z = 1
 N_REP = 1
 
 rlx_level = 1  
-rlx_seed = 60718  
+rlx_seed = 10  
 rlx_start = new
 rlx_state = rlx_state
 
@@ -26,38 +26,14 @@ theta_X = 0.
 theta_Y = 0.
 theta_Z = 0.
 
-
-// HMC variables
-tlen = 1.0
-csw = 1.1329500 
-
-// Schroedinger functional
-//SF_background must be 1 (background) or 0 (no background)
-SF_background = 1 
-SF_ct = 1.
-
-//needed only for ROTATED_SF
-SF_zf = 1.
-SF_ds = 1.
-SF_sign = 1
-
-//needed only for STOUT_SMEARED
-rho_s = 0.0
-rho_t = 0.0
-
-//needed only if compiled with FERMION_THETA
-theta_T = 0.0
-theta_X = 0.0
-theta_Y = 0.0
-theta_Z = 0.0
-
 // Run control variables
 run name = run1
 save freq = 1
 meas freq = 1
 conf dir = cnfg
 gauge start = random 
-last conf = +1
+last conf = +3
+tlen=1.0
 
 //Mesons
 mes:make = false
@@ -66,7 +42,6 @@ mes:precision = 1.e-24
 mes:nhits = 3
 mes:mass = -0.60
 mes:csw = 1.0
-
 
 //Polyakov
 poly:make = false
@@ -86,6 +61,7 @@ monomial {
 	id = 0
 	type = gauge
 	beta = 12.0
+	store_force = 1
 	level = 1
 }
 
@@ -95,9 +71,31 @@ monomial {
          mass = -0.148
          mt_prec = 1e-14
          force_prec = 1e-14
+	 store_force = 1
          mre_past = 15
          level = 0
 }
+
+// Integrators
+
+
+integrator {
+        level = 1
+        type = o2mn
+        steps = 4
+}
+
+integrator {
+        level = 0
+        type = o2mn
+        steps = 3
+}
+
+//integrator {
+//        level = 2
+//        type = o2mn
+//        steps = 6
+//}
 
 //monomial {
 //       id = 0
@@ -129,25 +127,4 @@ monomial {
 //       force_prec = 1e-18
 //       mre_past = 4
 //       level = 0
-//}
-
-// Integrators
-
-
-integrator {
-        level = 1
-        type = o2mn
-        steps = 2
-}
-
-integrator {
-        level = 0
-        type = o2mn
-        steps = 25
-}
-
-//integrator {
-//        level = 2
-//        type = o2mn
-//        steps = 6
 //}

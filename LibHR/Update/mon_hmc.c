@@ -66,6 +66,31 @@ void hmc_add_local_action(const struct _monomial *m, scalar_field *loc_action)
 #endif
 }
 
+//[COMPUTE ACTION]
+void hmc_local_action_sum(const struct _monomial *m, double * loc_action)
+{
+	mon_hmc_par *par = (mon_hmc_par*)(m->data.par);
+	spinor_field * tmp;
+	tmp = par->pf;
+
+	*loc_action=0.;
+  	if (tmp != NULL)
+  	{
+  	  _MASTER_FOR_SUM(tmp->type, i, loc_action)
+  	  {
+  	    double a = 0.;
+  	    /* Fermions */
+  	    _spinor_prod_re_f(a, *_FIELD_AT(tmp, i), *_FIELD_AT(tmp, i));
+	    *loc_action += a;
+  	  }
+	  global_sum(loc_action,1);
+  	}
+	//pf_local_action(loc_action, par->pf);
+#ifdef WITH_CLOVER_EO
+	clover_la_logdet(2., par->mass, loc_action);
+#endif
+}
+
 void hmc_free(struct _monomial *m)
 {
 	mon_hmc_par *par = (mon_hmc_par*)m->data.par;
@@ -103,6 +128,7 @@ struct _monomial* hmc_create(const monomial_data *data)
 	par->fpar.inv_err2 = data->force_prec;
 	par->fpar.inv_err2_flt = 1e-6;
 	par->fpar.mass = par->mass;
+	par->fpar.store_force = par->store_force;
 	par->fpar.b = 0;
 	par->fpar.hasenbusch = 0;
 	par->fpar.mu = 0;
@@ -124,6 +150,8 @@ struct _monomial* hmc_create(const monomial_data *data)
 	m->correct_pf = &hmc_correct_pf;
 	m->correct_la_pf = &hmc_correct_la_pf;
 	m->add_local_action = &hmc_add_local_action;
+	//[COMPUTE ACTION]
+	m->local_action = &hmc_local_action_sum;
 
 	return m;
 }

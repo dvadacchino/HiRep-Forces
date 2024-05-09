@@ -33,6 +33,18 @@ const spinor_field* pg_pseudofermion(const struct _monomial *m)
 	return NULL;
 }
 
+//[COMPUTE ACTION]
+void pg_local_action(const struct _monomial *m, double *loc_action)
+{
+	*loc_action=0.;
+	mon_pg_par *par = (mon_pg_par*)(m->data.par);
+	_MASTER_FOR_SUM(&glattice,ix, *loc_action)
+	{
+		*loc_action += -(par->beta/((double)NG))*local_plaq(ix);
+	}
+	global_sum(loc_action, 1);
+}
+
 void pg_add_local_action(const struct _monomial *m, scalar_field *loc_action)
 {
 	mon_pg_par *par = (mon_pg_par*)(m->data.par);
@@ -60,9 +72,12 @@ struct _monomial* pg_create(const monomial_data *data)
 
 	// Setup force parameters
 	par->force_par.beta = par->beta;
+	par->force_par.store_force = par->store_force;
 	par->force_par.momenta = &suN_momenta;
 	par->field_par.field = &u_gauge;
 	par->field_par.momenta = &suN_momenta;
+
+
 
 	// Setup pointers to update functions
 	m->free = &pg_free;
@@ -76,6 +91,8 @@ struct _monomial* pg_create(const monomial_data *data)
 	m->correct_pf = &pg_correct_pf;
 	m->correct_la_pf = &pg_correct_la_pf;
 	m->add_local_action = &pg_add_local_action;
+	//[COMPUTE ACTION]
+	m->local_action = &pg_local_action;
 
 	return m;
 }

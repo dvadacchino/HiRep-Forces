@@ -11,23 +11,37 @@ void monomial_force(double dt, integrator_par *par)
 {
 	for(int n = 0; n < par->nmon; n++)
 	{
-		const monomial *m = par->mon_list[n];
+		const monomial * m = par->mon_list[n];
+		//double  = m->force_par->store_force;
+		//lprintf("MONOMIAL_FORCE",0,"We are in monomial %d, integrator = %d\n", n, m->data.id);
+		//lprintf("MONOMIAL_FORCE",0,"We are in monomial %d, store_force = %f\n", n, sf);
 		m->update_force(dt, m->force_par);
 	}
 }
 
 void monomial_field(double dt, integrator_par *par)
 {
+
+	double loc_action_sum;
 	for(int n = 0; n < par->nmon; n++)
 	{
 		const monomial *m = par->mon_list[n];
 		if(m->update_field)
 		{
+
+			loc_action_sum=0.;
 			m->update_field(dt, m->field_par);
+			//[COMPUTE ACTION]
+			m->local_action(m, &loc_action_sum);
+			lprintf("[LOCAL_ACTION]",0,"The local action for monomial type %d is %f.\n", 
+					m->data.type,
+					loc_action_sum);
 		}
 	}
 	if(par->next)
 	{
+
+		//lprintf("MONOMIAL_FORCE",0,"We are in the monomial field function and we are chaning the monomial.\n");
 		par->next->integrator(dt, par->next);
 	}
 }

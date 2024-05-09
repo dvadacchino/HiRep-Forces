@@ -57,6 +57,9 @@ typedef struct
 	double mass;
 	double b;
 	double mu;
+	double store_force;
+	int idx_hist;
+	double * fhist;
 	double inv_err2, inv_err2_flt;
 	mre_par mpar;
 	int logdet;
@@ -68,6 +71,9 @@ typedef struct
 	double beta;
 	double c0;
 	double c1;
+	double store_force;
+	int idx_hist;
+	double * fhist;
 	suNg_av_field **momenta;
 } force_gauge_par;
 
@@ -107,6 +113,7 @@ void lw_local_action(scalar_field *, double, double, double);
 
 void fermion_force_begin();
 void fermion_force_end(double dt, suNg_av_field *);
+void force_normsq(double dt, double *f_nsq);
 void force_fermion_core(spinor_field *, spinor_field *, int, double, double);
 void force_fermion_core_taylor(spinor_field *, spinor_field *, int, double, double);
 void force_clover_logdet(double, double);
@@ -136,6 +143,7 @@ typedef struct _integrator_par
 {
 	int nsteps;
 	int nmon;
+	int history_length;
 	const monomial **mon_list;
 	void (*integrator)(double, struct _integrator_par *);
 	struct _integrator_par *next;
