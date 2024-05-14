@@ -1,6 +1,6 @@
-This repository contains the HiRep simulation code.
+This repository contains a fork of the HiRep simulation code.
 
-The `spn-swansea-merge` branch contains the changes
+The fork was effect from the `spn-swansea-merge` branch, which was
 made by the Swansea Academy of Advanced Computing 
 to improve the performance for the SP(2n) gauge group.
 
